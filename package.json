@@ -1,0 +1,13 @@
+{
+  "name": "weather",
+  "private": true,
+  "packageManager": "pnpm@10.30.3",
+  "engines": { "node": ">=22" },
+  "pnpm": { "onlyBuiltDependencies": ["esbuild"] },
+  "scripts": {
+    "dev": "pnpm --filter @weather/web dev",
+    "build": "pnpm --filter @weather/web build",
+    "preview": "pnpm --filter @weather/web preview",
+    "typecheck": "pnpm --filter @weather/web exec tsc -b"
+  }
+}
