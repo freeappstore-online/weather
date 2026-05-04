@@ -102,15 +102,16 @@ function toF(c: number): number {
 
 function formatTemp(c: number, unit: "C" | "F"): string {
   const val = unit === "F" ? toF(c) : c;
-  return `${Math.round(val)}°`;
+  return `${Math.round(val)}\u00B0`;
 }
 
 /* ── localStorage helpers ── */
-const LS_KEY = "weather_last_city";
+const LS_CITY_KEY = "weather_last_city";
+const LS_UNIT_KEY = "weather_unit";
 
 function loadLastCity(): { name: string; lat: number; lon: number } | null {
   try {
-    const raw = localStorage.getItem(LS_KEY);
+    const raw = localStorage.getItem(LS_CITY_KEY);
     if (!raw) return null;
     return JSON.parse(raw);
   } catch {
@@ -119,7 +120,16 @@ function loadLastCity(): { name: string; lat: number; lon: number } | null {
 }
 
 function saveLastCity(name: string, lat: number, lon: number) {
-  localStorage.setItem(LS_KEY, JSON.stringify({ name, lat, lon }));
+  localStorage.setItem(LS_CITY_KEY, JSON.stringify({ name, lat, lon }));
+}
+
+function loadUnit(): "C" | "F" {
+  const raw = localStorage.getItem(LS_UNIT_KEY);
+  return raw === "F" ? "F" : "C";
+}
+
+function saveUnit(u: "C" | "F") {
+  localStorage.setItem(LS_UNIT_KEY, u);
 }
 
 /* ── Day name helper ── */
@@ -130,14 +140,19 @@ function dayName(dateStr: string, index: number): string {
 }
 
 /* ── Component ── */
-export default function App() {
+export function App() {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [cityName, setCityName] = useState("");
-  const [unit, setUnit] = useState<"C" | "F">("C");
+  const [unit, setUnit] = useState<"C" | "F">(loadUnit);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<GeoResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const toggleUnit = (u: "C" | "F") => {
+    setUnit(u);
+    saveUnit(u);
+  };
 
   const loadWeather = useCallback(async (lat: number, lon: number, name: string) => {
     setLoading(true);
@@ -205,19 +220,19 @@ export default function App() {
             placeholder="Search city..."
             className="w-full px-4 py-3 outline-none"
             style={{
-              background: "var(--panel)",
-              border: "1px solid var(--line)",
-              borderRadius: "0.75rem",
-              color: "var(--ink)",
+              background: "var(--color-panel)",
+              border: "1px solid var(--color-line)",
+              borderRadius: "var(--radius-btn)",
+              color: "var(--color-ink)",
             }}
           />
           {results.length > 0 && (
             <ul
               className="absolute left-0 right-0 mt-1 overflow-hidden z-10"
               style={{
-                background: "var(--panel)",
-                border: "1px solid var(--line)",
-                borderRadius: "0.75rem",
+                background: "var(--color-panel)",
+                border: "1px solid var(--color-line)",
+                borderRadius: "var(--radius-btn)",
               }}
             >
               {results.map((r, i) => (
@@ -225,8 +240,8 @@ export default function App() {
                   <button
                     onClick={() => selectCity(r)}
                     className="w-full text-left px-4 py-3 transition-colors cursor-pointer"
-                    style={{ color: "var(--ink)" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = "var(--line)")}
+                    style={{ color: "var(--color-ink)" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "var(--color-line)")}
                     onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                   >
                     {r.name}, {r.country}
@@ -239,12 +254,12 @@ export default function App() {
 
         {/* Loading / Error */}
         {loading && (
-          <p style={{ color: "var(--muted)" }} className="text-center py-12">
+          <p style={{ color: "var(--color-muted)" }} className="text-center py-12">
             Loading weather...
           </p>
         )}
         {error && (
-          <p style={{ color: "var(--error)" }} className="text-center py-12">
+          <p style={{ color: "var(--color-accent)" }} className="text-center py-12">
             {error}
           </p>
         )}
@@ -252,16 +267,16 @@ export default function App() {
         {/* Weather content */}
         {weather && !loading && (
           <>
-            {/* Current weather card */}
+            {/* Current weather hero */}
             <div
               className="p-6 mb-6 text-center"
               style={{
-                background: "var(--panel)",
-                border: "1px solid var(--line)",
-                borderRadius: "1.25rem",
+                background: "var(--color-panel)",
+                border: "1px solid var(--color-line)",
+                borderRadius: "var(--radius-card)",
               }}
             >
-              <p className="text-sm font-medium mb-1" style={{ color: "var(--muted)" }}>
+              <p className="text-sm font-medium mb-1" style={{ color: "var(--color-muted)" }}>
                 {cityName}
               </p>
               <div className="text-5xl mb-2">
@@ -270,20 +285,20 @@ export default function App() {
               <div
                 className="leading-none mb-2"
                 style={{
-                  fontFamily: "Fraunces, serif",
+                  fontFamily: "var(--font-display)",
                   fontSize: "5rem",
                   fontWeight: 800,
-                  color: "var(--ink)",
+                  color: "var(--color-ink)",
                 }}
               >
                 {formatTemp(weather.current.temperature, unit)}
               </div>
-              <p className="text-base mb-4" style={{ color: "var(--muted)" }}>
+              <p className="text-base mb-4" style={{ color: "var(--color-muted)" }}>
                 {wmoToLabel(weather.current.weatherCode)}
               </p>
 
               {/* Stats row */}
-              <div className="flex justify-center gap-8 text-sm" style={{ color: "var(--muted)" }}>
+              <div className="flex justify-center gap-8 text-sm" style={{ color: "var(--color-muted)" }}>
                 <span>Humidity {weather.current.humidity}%</span>
                 <span>Wind {Math.round(weather.current.windSpeed)} km/h</span>
               </div>
@@ -294,30 +309,30 @@ export default function App() {
               <div
                 className="inline-flex overflow-hidden"
                 style={{
-                  border: "1px solid var(--line)",
-                  borderRadius: "0.75rem",
+                  border: "1px solid var(--color-line)",
+                  borderRadius: "var(--radius-btn)",
                 }}
               >
                 <button
-                  onClick={() => setUnit("C")}
+                  onClick={() => toggleUnit("C")}
                   className="px-4 py-2 text-sm font-medium transition-colors cursor-pointer"
                   style={{
-                    background: unit === "C" ? "var(--accent)" : "var(--panel)",
-                    color: unit === "C" ? "#fff" : "var(--muted)",
+                    background: unit === "C" ? "var(--color-accent)" : "var(--color-panel)",
+                    color: unit === "C" ? "#fff" : "var(--color-muted)",
                   }}
                 >
-                  °C
+                  {"\u00B0C"}
                 </button>
                 <button
-                  onClick={() => setUnit("F")}
+                  onClick={() => toggleUnit("F")}
                   className="px-4 py-2 text-sm font-medium transition-colors cursor-pointer"
                   style={{
-                    background: unit === "F" ? "var(--accent)" : "var(--panel)",
-                    color: unit === "F" ? "#fff" : "var(--muted)",
-                    borderLeft: "1px solid var(--line)",
+                    background: unit === "F" ? "var(--color-accent)" : "var(--color-panel)",
+                    color: unit === "F" ? "#fff" : "var(--color-muted)",
+                    borderLeft: "1px solid var(--color-line)",
                   }}
                 >
-                  °F
+                  {"\u00B0F"}
                 </button>
               </div>
             </div>
@@ -326,14 +341,14 @@ export default function App() {
             <div
               className="overflow-hidden"
               style={{
-                border: "1px solid var(--line)",
-                borderRadius: "1.25rem",
-                background: "var(--panel)",
+                border: "1px solid var(--color-line)",
+                borderRadius: "var(--radius-card)",
+                background: "var(--color-panel)",
               }}
             >
               <h2
                 className="px-5 pt-4 pb-2 text-sm font-semibold"
-                style={{ color: "var(--muted)" }}
+                style={{ color: "var(--color-muted)" }}
               >
                 7-Day Forecast
               </h2>
@@ -342,24 +357,37 @@ export default function App() {
                   key={day.date}
                   className="flex items-center px-5 py-3"
                   style={{
-                    borderTop: i === 0 ? "none" : "1px solid var(--line)",
+                    borderTop: i === 0 ? "none" : "1px solid var(--color-line)",
                   }}
                 >
-                  <span className="w-16 text-sm font-medium" style={{ color: "var(--ink)" }}>
+                  <span className="w-16 text-sm font-medium" style={{ color: "var(--color-ink)" }}>
                     {dayName(day.date, i)}
                   </span>
                   <span className="text-2xl mx-3">{wmoToEmoji(day.weatherCode)}</span>
-                  <span className="flex-1 text-sm" style={{ color: "var(--muted)" }}>
+                  <span className="flex-1 text-sm" style={{ color: "var(--color-muted)" }}>
                     {wmoToLabel(day.weatherCode)}
                   </span>
-                  <span className="text-sm font-medium" style={{ color: "var(--ink)" }}>
+                  <span className="text-sm font-medium" style={{ color: "var(--color-ink)" }}>
                     {formatTemp(day.tempMax, unit)}
                   </span>
-                  <span className="text-sm ml-2" style={{ color: "var(--muted)" }}>
+                  <span className="text-sm ml-2" style={{ color: "var(--color-muted)" }}>
                     {formatTemp(day.tempMin, unit)}
                   </span>
                 </div>
               ))}
+            </div>
+
+            {/* Mobile-only FreeAppStore link */}
+            <div className="mt-6 text-center md:hidden">
+              <a
+                href="https://freeappstore.online"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs hover:underline"
+                style={{ color: "var(--color-muted)" }}
+              >
+                Part of FreeAppStore — free forever
+              </a>
             </div>
           </>
         )}
