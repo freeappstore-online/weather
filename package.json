@@ -2,10 +2,21 @@
   "name": "freeweatherapp",
   "private": true,
   "packageManager": "pnpm@10.30.3",
-  "engines": { "node": ">=22" },
-  "pnpm": { "onlyBuiltDependencies": ["esbuild"] },
+  "engines": {
+    "node": ">=22"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  },
   "scripts": {
     "dev": "pnpm --filter @freeweatherapp/web dev",
-    "build": "pnpm --filter @freeweatherapp/web build"
+    "build": "pnpm --filter @freeweatherapp/web build",
+    "test": "pnpm --filter @weather/web exec tsc -b"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/freeappstore-online/weather.git"
   }
 }
