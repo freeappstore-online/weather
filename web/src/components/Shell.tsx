@@ -17,7 +17,7 @@ export function Shell({ children }: ShellProps) {
             background: "var(--color-panel)",
           }}
         >
-          <div className="p-6 font-bold text-lg" style={{ fontFamily: "var(--font-display)" }}>
+          <div className="p-6 font-bold text-lg" style={{ fontFamily: "Fraunces, Georgia, serif" }}>
             weather
           </div>
           <nav className="flex-1 px-4">
@@ -44,7 +44,7 @@ export function Shell({ children }: ShellProps) {
           className="flex items-center px-4 h-14 border-b shrink-0"
           style={{ borderColor: "var(--color-line)", background: "var(--color-panel)" }}
         >
-          <span className="font-bold" style={{ fontFamily: "var(--font-display)" }}>
+          <span className="font-bold" style={{ fontFamily: "Fraunces, Georgia, serif" }}>
             weather
           </span>
         </header>

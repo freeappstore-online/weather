@@ -285,7 +285,7 @@ export function App() {
               <div
                 className="leading-none mb-2"
                 style={{
-                  fontFamily: "var(--font-display)",
+                  fontFamily: "Fraunces, Georgia, serif",
                   fontSize: "5rem",
                   fontWeight: 800,
                   color: "var(--color-ink)",

@@ -13,7 +13,8 @@
   "scripts": {
     "dev": "pnpm --filter @freeweatherapp/web dev",
     "build": "pnpm --filter @freeweatherapp/web build",
-    "test": "pnpm --filter @weather/web exec tsc -b"
+    "typecheck": "pnpm --filter @freeweatherapp/web exec tsc -b",
+    "test": "pnpm --filter @freeweatherapp/web exec tsc -b"
   },
   "repository": {
     "type": "git",
