@@ -50,22 +50,85 @@ interface GeoResult {
   longitude: number;
 }
 
+interface AirDay {
+  date: string;
+  aqiMax: number;
+  uvMax: number;
+}
+
+interface AirQuality {
+  aqi: number;
+  pm25: number;
+  pm10: number;
+  ozone: number;
+  no2: number;
+  dust: number;
+  days: AirDay[];
+}
+
 interface WeatherData {
   current: CurrentWeather;
   daily: DailyForecast[];
+  air: AirQuality | null;
 }
 
 /* ── API helpers ── */
+async function fetchAir(lat: number, lon: number): Promise<AirQuality> {
+  const url =
+    `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}` +
+    `&current=us_aqi,pm2_5,pm10,ozone,nitrogen_dioxide,dust` +
+    `&hourly=us_aqi,uv_index&forecast_days=5&timezone=auto`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Air quality fetch failed");
+  const data = await res.json();
+  const byDay = new Map<string, AirDay>();
+  (data.hourly.time as string[]).forEach((t, i) => {
+    const date = t.slice(0, 10);
+    const day = byDay.get(date) ?? { date, aqiMax: 0, uvMax: 0 };
+    day.aqiMax = Math.max(day.aqiMax, data.hourly.us_aqi[i] ?? 0);
+    day.uvMax = Math.max(day.uvMax, data.hourly.uv_index[i] ?? 0);
+    byDay.set(date, day);
+  });
+  return {
+    aqi: data.current.us_aqi,
+    pm25: data.current.pm2_5,
+    pm10: data.current.pm10,
+    ozone: data.current.ozone,
+    no2: data.current.nitrogen_dioxide,
+    dust: data.current.dust,
+    days: [...byDay.values()],
+  };
+}
+
+/* ── US AQI band → label + colour ── */
+function aqiBand(aqi: number): { label: string; color: string } {
+  if (aqi <= 50) return { label: "Good", color: "#16a34a" };
+  if (aqi <= 100) return { label: "Moderate", color: "#ca8a04" };
+  if (aqi <= 150) return { label: "Unhealthy for sensitive groups", color: "#ea580c" };
+  if (aqi <= 200) return { label: "Unhealthy", color: "#dc2626" };
+  if (aqi <= 300) return { label: "Very unhealthy", color: "#9333ea" };
+  return { label: "Hazardous", color: "#7f1d1d" };
+}
+
+function uvLabel(uv: number): string {
+  if (uv < 3) return "Low";
+  if (uv < 6) return "Moderate";
+  if (uv < 8) return "High";
+  if (uv < 11) return "Very high";
+  return "Extreme";
+}
+
 async function fetchWeather(lat: number, lon: number): Promise<WeatherData> {
   const url =
     `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
     `&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m` +
     `&daily=weather_code,temperature_2m_max,temperature_2m_min` +
     `&timezone=auto`;
-  const res = await fetch(url);
+  const [res, air] = await Promise.all([fetch(url), fetchAir(lat, lon).catch(() => null)]);
   if (!res.ok) throw new Error("Weather fetch failed");
   const data = await res.json();
   return {
+    air,
     current: {
       temperature: data.current.temperature_2m,
       weatherCode: data.current.weather_code,
@@ -336,6 +399,64 @@ export function App() {
                 </button>
               </div>
             </div>
+
+            {/* Air quality */}
+            {weather.air && (
+              <div className="mb-6 overflow-hidden border border-line rounded-card bg-panel">
+                <h2 className="px-5 pt-4 pb-2 text-sm font-semibold text-muted">
+                  Air Quality
+                </h2>
+                <div className="flex items-center gap-4 px-5 pb-4">
+                  <div
+                    className="flex items-center justify-center shrink-0 w-16 h-16 rounded-full text-2xl font-bold text-white"
+                    style={{ background: aqiBand(weather.air.aqi).color }}
+                  >
+                    {Math.round(weather.air.aqi)}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-ink">
+                      {aqiBand(weather.air.aqi).label}
+                    </p>
+                    <p className="text-sm text-muted">
+                      US AQI · UV today {Math.round(weather.air.days[0]?.uvMax ?? 0)} ({uvLabel(weather.air.days[0]?.uvMax ?? 0)})
+                    </p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 sm:grid-cols-5 text-center border-t border-line">
+                  {[
+                    ["PM2.5", weather.air.pm25],
+                    ["PM10", weather.air.pm10],
+                    ["O\u2083", weather.air.ozone],
+                    ["NO\u2082", weather.air.no2],
+                    ["Dust", weather.air.dust],
+                  ].map(([label, value]) => (
+                    <div key={label} className="py-3">
+                      <p className="text-xs text-muted">{label}</p>
+                      <p className="text-sm font-medium text-ink">
+                        {Math.round(value as number)}
+                        <span className="text-xs text-muted"> µg/m³</span>
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex border-t border-line">
+                  {weather.air.days.map((d, i) => (
+                    <div key={d.date} className="flex-1 py-3 text-center">
+                      <p className="text-xs text-muted">{dayName(d.date, i)}</p>
+                      <span
+                        className="inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-semibold text-white"
+                        style={{ background: aqiBand(d.aqiMax).color }}
+                      >
+                        {Math.round(d.aqiMax)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <p className="px-5 py-2 text-xs text-muted border-t border-line">
+                  Modelled data from Open-Meteo / CAMS. Daily figures are peak AQI.
+                </p>
+              </div>
+            )}
 
             {/* 7-day forecast */}
             <div

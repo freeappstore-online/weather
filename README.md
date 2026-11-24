@@ -1,6 +1,6 @@
 # Weather
 
-Current weather and 7-day forecast. Location-based, city search, C/F toggle. No API key needed.
+Current weather, 7-day forecast and air quality (US AQI, PM2.5/PM10, ozone, NO₂, dust, UV). Location-based, city search, C/F toggle. No API key needed.
 
 **Category:** News & Weather  
 **Live:** [weather.freeappstore.online](https://weather.freeappstore.online)
